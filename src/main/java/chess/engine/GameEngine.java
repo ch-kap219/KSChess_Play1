@@ -70,4 +70,8 @@ public class GameEngine
     {
         return gameOver;
     }
+    public GameSnapshot snapshot()
+    {
+        return new GameSnapshot(board, gameOver);
+    }
 }
