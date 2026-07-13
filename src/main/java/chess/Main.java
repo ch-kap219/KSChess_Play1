@@ -2,25 +2,20 @@ package chess;
 
 import chess.texttests.ScriptRunner;
 
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Main
 {
     public static void main(String[] args)
     {
-        List<String> lines = List.of(
-                "Board:",
-                ". wR .",
-                ". . .",
-                ". . bK",
-                "Commands:",
-                "click 150 50",
-                "click 150 250",
-                "wait 1000",
-                "print board",
-                "wait 1000",
-                "print board"
-        );
+        Scanner scanner = new Scanner(System.in);
+        ArrayList<String> lines = new ArrayList<>();
+
+        while (scanner.hasNextLine())
+        {
+            lines.add(scanner.nextLine());
+        }
 
         ScriptRunner runner = new ScriptRunner();
         runner.run(lines);
