@@ -5,6 +5,7 @@ import chess.input.Controller;
 import chess.io.BoardParser;
 import chess.io.BoardPrinter;
 import chess.model.Board;
+import chess.model.Position;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,6 +59,7 @@ public class ScriptRunner
             }
 
             if (line.startsWith("click")
+                    || line.startsWith("jump")
                     || line.startsWith("wait")
                     || line.equals("print board"))
             {
@@ -77,7 +79,19 @@ public class ScriptRunner
                 continue;
             }
 
-            if (line.startsWith("click"))
+            if (line.startsWith("jump"))
+            {
+                String[] parts = line.split("\\s+");
+
+                int x = Integer.parseInt(parts[1]);
+                int y = Integer.parseInt(parts[2]);
+
+                int row = y / 100;
+                int col = x / 100;
+
+                engine.jump(new Position(row, col));
+            }
+            else if (line.startsWith("click"))
             {
                 String[] parts = line.split("\\s+");
 

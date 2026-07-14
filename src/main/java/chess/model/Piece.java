@@ -5,7 +5,8 @@ public class Piece {
     public enum State {
         IDLE,
         MOVING,
-        CAPTURED
+        CAPTURED,
+        JUMPING
     }
 
     private final int id;

@@ -74,4 +74,21 @@ public class GameEngine
     {
         return new GameSnapshot(board, gameOver);
     }
+
+    public void jump(Position position)
+    {
+        if (gameOver)
+        {
+            return;
+        }
+
+        Piece piece = board.getPiece(position);
+
+        if (piece == null)
+        {
+            return;
+        }
+
+        realtime.startJump(piece);
+    }
 }

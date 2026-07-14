@@ -4,17 +4,25 @@ import chess.model.Board;
 import chess.model.Piece;
 import chess.model.Position;
 
-public class RealTimeArbiter {
-
+public class RealTimeArbiter
+{
     private final Board board;
+
     private Motion activeMotion;
 
-    public RealTimeArbiter(Board board) {
+    private Piece jumpingPiece;
+    private int jumpTimeLeft;
+
+    public RealTimeArbiter(Board board)
+    {
         this.board = board;
         this.activeMotion = null;
+        this.jumpingPiece = null;
+        this.jumpTimeLeft = 0;
     }
 
-    public boolean hasActiveMotion() {
+    public boolean hasActiveMotion()
+    {
         return activeMotion != null;
     }
 
@@ -22,60 +30,114 @@ public class RealTimeArbiter {
             Piece piece,
             Position source,
             Position destination
-    ) {
-        if (hasActiveMotion()) {
-            throw new IllegalStateException(
-                    "motion_in_progress"
-            );
+    )
+    {
+        if (hasActiveMotion())
+        {
+            throw new IllegalStateException("motion_in_progress");
         }
 
-        activeMotion = new Motion(
-                piece,
-                source,
-                destination
-        );
-
+        activeMotion = new Motion(piece, source, destination);
         piece.setState(Piece.State.MOVING);
     }
 
-    public boolean advanceTime(int milliseconds) {
-        if (milliseconds < 0) {
+    public void startJump(Piece piece)
+    {
+        if (piece == null)
+        {
+            return;
+        }
+
+        if (piece.getState() != Piece.State.IDLE)
+        {
+            return;
+        }
+
+        jumpingPiece = piece;
+        jumpTimeLeft = 1000;
+        piece.setState(Piece.State.JUMPING);
+    }
+
+    public boolean advanceTime(int milliseconds)
+    {
+        if (milliseconds < 0)
+        {
             throw new IllegalArgumentException(
                     "Time cannot be negative"
             );
         }
 
-        if (activeMotion == null) {
-            return false;
+        boolean jumpWasActive =
+                jumpingPiece != null
+                        && jumpTimeLeft > 0;
+
+        if (activeMotion != null)
+        {
+            activeMotion.advanceTime(milliseconds);
+
+            if (activeMotion.hasArrived())
+            {
+                Position from = activeMotion.getSource();
+                Position to = activeMotion.getDestination();
+
+                Piece movingPiece =
+                        activeMotion.getPiece();
+
+                Piece targetPiece =
+                        board.getPiece(to);
+
+                boolean targetIsJumping =
+                        jumpWasActive
+                                && targetPiece == jumpingPiece;
+
+                if (targetIsJumping
+                        && movingPiece.getColor()
+                        != jumpingPiece.getColor())
+                {
+                    board.removePiece(from);
+                    movingPiece.setState(Piece.State.CAPTURED);
+                    activeMotion = null;
+                }
+                else
+                {
+                    boolean kingCaptured =
+                            targetPiece != null
+                                    && targetPiece.getType() == 'K';
+
+                    board.movePiece(from, to);
+                    activeMotion = null;
+
+                    updateJump(milliseconds);
+
+                    return kingCaptured;
+                }
+            }
         }
 
-        activeMotion.advanceTime(milliseconds);
+        updateJump(milliseconds);
 
-        if (!activeMotion.hasArrived()) {
-            return false;
-        }
-
-        Position source =
-                activeMotion.getSource();
-
-        Position destination =
-                activeMotion.getDestination();
-
-        Piece capturedPiece =
-                board.getPiece(destination);
-
-        boolean kingCaptured =
-                capturedPiece != null
-                        && capturedPiece.getType() == 'K';
-
-        board.movePiece(source, destination);
-
-        activeMotion = null;
-
-        return kingCaptured;
+        return false;
     }
 
-    public Motion getActiveMotion() {
+    private void updateJump(int milliseconds)
+    {
+        if (jumpingPiece == null)
+        {
+            return;
+        }
+
+        jumpTimeLeft -= milliseconds;
+
+        if (jumpTimeLeft <= 0)
+        {
+            jumpingPiece.setState(Piece.State.IDLE);
+            jumpingPiece = null;
+            jumpTimeLeft = 0;
+        }
+    }
+
+    public Motion getActiveMotion()
+    {
         return activeMotion;
     }
 }
