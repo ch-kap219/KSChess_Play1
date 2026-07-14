@@ -17,7 +17,14 @@ public class Main
             lines.add(scanner.nextLine());
         }
 
-        ScriptRunner runner = new ScriptRunner();
-        runner.run(lines);
+        try
+        {
+            ScriptRunner runner = new ScriptRunner();
+            runner.run(lines);
+        }
+        catch (IllegalArgumentException error)
+        {
+            System.out.println(error.getMessage());
+        }
     }
 }

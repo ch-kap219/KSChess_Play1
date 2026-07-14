@@ -2,6 +2,7 @@ package chess.input;
 
 import chess.engine.GameEngine;
 import chess.model.Board;
+import chess.model.Piece;
 import chess.model.Position;
 
 public class Controller
@@ -21,17 +22,11 @@ public class Controller
     public void click(int x, int y)
     {
         Board board = engine.getBoard();
-
-        Position clicked =
-                mapper.getPosition(x, y, board);
+        Position clicked = mapper.getPosition(x, y, board);
 
         if (clicked == null)
         {
-            if (selected != null)
-            {
-                selected = null;
-            }
-
+            selected = null;
             return;
         }
 
@@ -42,6 +37,17 @@ public class Controller
                 return;
             }
 
+            selected = clicked;
+            return;
+        }
+
+        Piece selectedPiece = board.getPiece(selected);
+        Piece clickedPiece = board.getPiece(clicked);
+
+        if (clickedPiece != null
+                && selectedPiece != null
+                && clickedPiece.getColor() == selectedPiece.getColor())
+        {
             selected = clicked;
             return;
         }

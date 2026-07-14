@@ -80,11 +80,8 @@ public class RealTimeArbiter
                 Position from = activeMotion.getSource();
                 Position to = activeMotion.getDestination();
 
-                Piece movingPiece =
-                        activeMotion.getPiece();
-
-                Piece targetPiece =
-                        board.getPiece(to);
+                Piece movingPiece = activeMotion.getPiece();
+                Piece targetPiece = board.getPiece(to);
 
                 boolean targetIsJumping =
                         jumpWasActive
@@ -105,6 +102,9 @@ public class RealTimeArbiter
                                     && targetPiece.getType() == 'K';
 
                     board.movePiece(from, to);
+
+                    promotePawn(movingPiece, to);
+
                     activeMotion = null;
 
                     updateJump(milliseconds);
@@ -117,6 +117,28 @@ public class RealTimeArbiter
         updateJump(milliseconds);
 
         return false;
+    }
+
+    private void promotePawn(Piece piece, Position position)
+    {
+        if (piece.getType() != 'P')
+        {
+            return;
+        }
+
+        boolean whiteReachedEnd =
+                piece.getColor() == 'w'
+                        && position.getRow() == 0;
+
+        boolean blackReachedEnd =
+                piece.getColor() == 'b'
+                        && position.getRow()
+                        == board.getHeight() - 1;
+
+        if (whiteReachedEnd || blackReachedEnd)
+        {
+            piece.setType('Q');
+        }
     }
 
     private void updateJump(int milliseconds)

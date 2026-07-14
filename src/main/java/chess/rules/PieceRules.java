@@ -147,8 +147,8 @@ public class PieceRules {
         // צעד כפול לפי הכללים הישנים שלך
         int startRow =
                 piece.getColor() == 'w'
-                        ? board.getHeight() - 1
-                        : 0;
+                        ? board.getHeight() - 2
+                        : 1;
 
         if (rowDirection == 2 * direction
                 && source.getRow() == startRow

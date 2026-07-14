@@ -1,22 +1,24 @@
 package chess.model;
 
-public class Piece {
-
-    public enum State {
+public class Piece
+{
+    public enum State
+    {
         IDLE,
         MOVING,
-        CAPTURED,
-        JUMPING
+        JUMPING,
+        CAPTURED
     }
 
     private final int id;
     private final char color;
-    private final char type;
+    private char type;
 
     private Position position;
     private State state;
 
-    public Piece(int id, char color, char type, Position position) {
+    public Piece(int id, char color, char type, Position position)
+    {
         this.id = id;
         this.color = color;
         this.type = type;
@@ -24,35 +26,48 @@ public class Piece {
         this.state = State.IDLE;
     }
 
-    public int getId() {
+    public int getId()
+    {
         return id;
     }
 
-    public char getColor() {
+    public char getColor()
+    {
         return color;
     }
 
-    public char getType() {
+    public char getType()
+    {
         return type;
     }
 
-    public Position getPosition() {
+    public void setType(char type)
+    {
+        this.type = type;
+    }
+
+    public Position getPosition()
+    {
         return position;
     }
 
-    public State getState() {
+    public State getState()
+    {
         return state;
     }
 
-    public void setPosition(Position position) {
+    public void setPosition(Position position)
+    {
         this.position = position;
     }
 
-    public void setState(State state) {
+    public void setState(State state)
+    {
         this.state = state;
     }
 
-    public String getToken() {
+    public String getToken()
+    {
         return "" + color + type;
     }
 }
