@@ -1,5 +1,5 @@
 package chess.engine;
-
+import chess.realtime.Motion;
 import chess.model.Board;
 import chess.model.Piece;
 import chess.model.Position;
@@ -70,9 +70,27 @@ public class GameEngine
     {
         return gameOver;
     }
-    public GameSnapshot snapshot()
-    {
-        return new GameSnapshot(board, gameOver);
+    public GameSnapshot snapshot() {
+        Motion motion =
+                realtime.getActiveMotion();
+
+        MotionSnapshot motionSnapshot = null;
+
+        if (motion != null) {
+            motionSnapshot = new MotionSnapshot(
+                    motion.getPiece().getId(),
+                    motion.getSource(),
+                    motion.getDestination(),
+                    motion.getDuration(),
+                    motion.getElapsedTime()
+            );
+        }
+
+        return new GameSnapshot(
+                board,
+                gameOver,
+                motionSnapshot
+        );
     }
 
     public void jump(Position position)

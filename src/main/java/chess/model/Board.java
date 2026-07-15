@@ -90,6 +90,6 @@ public class Board {
         cells[destination.getRow()][destination.getCol()] = movingPiece;
 
         movingPiece.setPosition(destination);
-        movingPiece.setState(Piece.State.IDLE);
+        movingPiece.startLongRest();
     }
 }

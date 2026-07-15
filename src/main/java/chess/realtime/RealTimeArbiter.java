@@ -37,7 +37,12 @@ public class RealTimeArbiter
             throw new IllegalStateException("motion_in_progress");
         }
 
-        activeMotion = new Motion(piece, source, destination);
+        activeMotion = new Motion(
+                piece,
+                source,
+                destination
+        );
+
         piece.setState(Piece.State.MOVING);
     }
 
@@ -55,6 +60,7 @@ public class RealTimeArbiter
 
         jumpingPiece = piece;
         jumpTimeLeft = 1000;
+
         piece.setState(Piece.State.JUMPING);
     }
 
@@ -67,6 +73,11 @@ public class RealTimeArbiter
             );
         }
 
+        /*
+         * מקדם את זמן המנוחה של כל הכלים.
+         */
+        updateRestingPieces(milliseconds);
+
         boolean jumpWasActive =
                 jumpingPiece != null
                         && jumpTimeLeft > 0;
@@ -77,33 +88,54 @@ public class RealTimeArbiter
 
             if (activeMotion.hasArrived())
             {
-                Position from = activeMotion.getSource();
-                Position to = activeMotion.getDestination();
+                Position from =
+                        activeMotion.getSource();
 
-                Piece movingPiece = activeMotion.getPiece();
-                Piece targetPiece = board.getPiece(to);
+                Position to =
+                        activeMotion.getDestination();
+
+                Piece movingPiece =
+                        activeMotion.getPiece();
+
+                Piece targetPiece =
+                        board.getPiece(to);
 
                 boolean targetIsJumping =
                         jumpWasActive
-                                && targetPiece == jumpingPiece;
+                                && targetPiece
+                                == jumpingPiece;
 
                 if (targetIsJumping
                         && movingPiece.getColor()
                         != jumpingPiece.getColor())
                 {
                     board.removePiece(from);
-                    movingPiece.setState(Piece.State.CAPTURED);
+
+                    movingPiece.setState(
+                            Piece.State.CAPTURED
+                    );
+
                     activeMotion = null;
                 }
                 else
                 {
                     boolean kingCaptured =
                             targetPiece != null
-                                    && targetPiece.getType() == 'K';
+                                    && targetPiece.getType()
+                                    == 'K';
 
                     board.movePiece(from, to);
 
-                    promotePawn(movingPiece, to);
+                    promotePawn(
+                            movingPiece,
+                            to
+                    );
+
+                    /*
+                     * אחרי שהכלי הגיע,
+                     * הוא מתחיל מנוחה של 10 שניות.
+                     */
+                    movingPiece.startLongRest();
 
                     activeMotion = null;
 
@@ -119,7 +151,38 @@ public class RealTimeArbiter
         return false;
     }
 
-    private void promotePawn(Piece piece, Position position)
+    private void updateRestingPieces(
+            int milliseconds
+    )
+    {
+        for (int row = 0;
+             row < board.getHeight();
+             row++)
+        {
+            for (int col = 0;
+                 col < board.getWidth();
+                 col++)
+            {
+                Position position =
+                        new Position(row, col);
+
+                Piece piece =
+                        board.getPiece(position);
+
+                if (piece != null)
+                {
+                    piece.advanceRestTime(
+                            milliseconds
+                    );
+                }
+            }
+        }
+    }
+
+    private void promotePawn(
+            Piece piece,
+            Position position
+    )
     {
         if (piece.getType() != 'P')
         {
@@ -135,7 +198,8 @@ public class RealTimeArbiter
                         && position.getRow()
                         == board.getHeight() - 1;
 
-        if (whiteReachedEnd || blackReachedEnd)
+        if (whiteReachedEnd
+                || blackReachedEnd)
         {
             piece.setType('Q');
         }
@@ -152,7 +216,7 @@ public class RealTimeArbiter
 
         if (jumpTimeLeft <= 0)
         {
-            jumpingPiece.setState(Piece.State.IDLE);
+            jumpingPiece.startShortRest();
             jumpingPiece = null;
             jumpTimeLeft = 0;
         }

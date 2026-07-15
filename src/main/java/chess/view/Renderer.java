@@ -1,16 +1,19 @@
 package chess.view;
 
 import chess.engine.GameSnapshot;
+import chess.engine.MotionSnapshot;
 import chess.model.Board;
 import chess.model.Piece;
 import chess.model.Position;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Graphics2D;
 
-public class Renderer {
-
+public class Renderer
+{
     private static final int CELL_SIZE = 100;
+    private static final int TOTAL_REST_TIME = 10_000;
 
     private static final String BOARD_PATH =
             "src/main/images/board.png";
@@ -18,10 +21,28 @@ public class Renderer {
     private static final String PIECES_PATH =
             "src/main/images/pieces2/";
 
+    private final PieceImageLoader imageLoader;
+
+    /*
+     * משמש להחלפת תמונות האנימציה.
+     */
+    private long animationTime;
+
+    public Renderer()
+    {
+        imageLoader = new PieceImageLoader(
+                PIECES_PATH,
+                CELL_SIZE
+        );
+
+        animationTime = 0;
+    }
+
     public Img render(
             GameSnapshot snapshot,
             Position selected
-    ) {
+    )
+    {
         Board board = snapshot.getBoard();
 
         int boardWidth =
@@ -30,18 +51,34 @@ public class Renderer {
         int boardHeight =
                 board.getHeight() * CELL_SIZE;
 
-        // בכל ציור יוצרים מחדש תמונה של הלוח
         Img canvas = new Img().read(
                 BOARD_PATH,
-                new Dimension(boardWidth, boardHeight),
+                new Dimension(
+                        boardWidth,
+                        boardHeight
+                ),
                 false,
                 null
         );
 
-        drawPieces(canvas, board);
-        drawSelection(canvas, selected);
+        /*
+         * החלון מצייר בערך כל 16 מילישניות.
+         */
+        animationTime += 16;
 
-        if (snapshot.isGameOver()) {
+        drawPieces(
+                canvas,
+                board,
+                snapshot.getActiveMotion()
+        );
+
+        drawSelection(
+                canvas,
+                selected
+        );
+
+        if (snapshot.isGameOver())
+        {
             drawGameOver(canvas);
         }
 
@@ -50,27 +87,46 @@ public class Renderer {
 
     private void drawPieces(
             Img canvas,
-            Board board
-    ) {
+            Board board,
+            MotionSnapshot activeMotion
+    )
+    {
         for (int row = 0;
              row < board.getHeight();
-             row++) {
-
+             row++)
+        {
             for (int col = 0;
                  col < board.getWidth();
-                 col++) {
-
+                 col++)
+            {
                 Position position =
                         new Position(row, col);
 
                 Piece piece =
                         board.getPiece(position);
 
-                if (piece == null) {
+                if (piece == null
+                        || piece.getState()
+                        == Piece.State.CAPTURED)
+                {
                     continue;
                 }
 
+                /*
+                 * קודם מציירים את הכלי.
+                 */
                 drawPiece(
+                        canvas,
+                        piece,
+                        row,
+                        col,
+                        activeMotion
+                );
+
+                /*
+                 * אחר כך מציירים מעליו את שכבת זמן המנוחה.
+                 */
+                drawRestOverlay(
                         canvas,
                         piece,
                         row,
@@ -84,55 +140,174 @@ public class Renderer {
             Img canvas,
             Piece piece,
             int row,
-            int col
-    ) {
-        String folderName =
-                createPieceFolderName(piece);
+            int col,
+            MotionSnapshot activeMotion
+    )
+    {
+        double pixelX =
+                col * CELL_SIZE;
 
-        String imagePath =
-                PIECES_PATH
-                        + folderName
-                        + "/states/idle/sprites/1.png";
+        double pixelY =
+                row * CELL_SIZE;
 
-        Img pieceImage = new Img().read(
-                imagePath,
-                new Dimension(CELL_SIZE, CELL_SIZE),
-                true,
-                null
-        );
+        /*
+         * רק הכלי השייך לתנועה הפעילה
+         * מקבל מיקום בין שתי משבצות.
+         */
+        if (activeMotion != null
+                && activeMotion.getPieceId()
+                == piece.getId())
+        {
+            double progress =
+                    calculateProgress(activeMotion);
 
-        int x = col * CELL_SIZE;
-        int y = row * CELL_SIZE;
+            double startX =
+                    activeMotion
+                            .getSource()
+                            .getCol()
+                            * CELL_SIZE;
 
-        pieceImage.drawOn(canvas, x, y);
-    }
+            double startY =
+                    activeMotion
+                            .getSource()
+                            .getRow()
+                            * CELL_SIZE;
 
-    private String createPieceFolderName(
-            Piece piece
-    ) {
-        char type = piece.getType();
+            double endX =
+                    activeMotion
+                            .getDestination()
+                            .getCol()
+                            * CELL_SIZE;
 
-        char color =
-                Character.toUpperCase(
-                        piece.getColor()
+            double endY =
+                    activeMotion
+                            .getDestination()
+                            .getRow()
+                            * CELL_SIZE;
+
+            pixelX =
+                    startX
+                            + (endX - startX)
+                            * progress;
+
+            pixelY =
+                    startY
+                            + (endY - startY)
+                            * progress;
+        }
+
+        Img pieceImage =
+                imageLoader.getFrame(
+                        piece,
+                        animationTime
                 );
 
-        return "" + type + color;
+        pieceImage.drawOn(
+                canvas,
+                (int) Math.round(pixelX),
+                (int) Math.round(pixelY)
+        );
+    }
+
+    private void drawRestOverlay(
+            Img canvas,
+            Piece piece,
+            int row,
+            int col
+    )
+    {if (piece.getState() != Piece.State.LONG_REST
+            && piece.getState() != Piece.State.SHORT_REST)
+    {
+        return;
+    }
+        int timeLeft =
+                piece.getRestTimeLeft();
+
+        double progress =
+                timeLeft
+                        / (double) TOTAL_REST_TIME;
+
+        progress = Math.max(
+                0.0,
+                Math.min(1.0, progress)
+        );
+
+        int overlayHeight =
+                (int) Math.round(
+                        CELL_SIZE * progress
+                );
+
+        int x =
+                col * CELL_SIZE;
+
+        /*
+         * השכבה מתחילה בתחתית התא
+         * וקטנה כלפי מטה ככל שהזמן עובר.
+         */
+        int y =
+                row * CELL_SIZE
+                        + CELL_SIZE
+                        - overlayHeight;
+
+        Graphics2D graphics =
+                canvas.get().createGraphics();
+
+        graphics.setColor(
+                new Color(
+                        255,
+                        255,
+                        120,
+                        100
+                )
+        );
+
+        graphics.fillRect(
+                x,
+                y,
+                CELL_SIZE,
+                overlayHeight
+        );
+
+        graphics.dispose();
+    }
+
+    private double calculateProgress(
+            MotionSnapshot motion
+    )
+    {
+        if (motion.getDuration() <= 0)
+        {
+            return 1.0;
+        }
+
+        double progress =
+                motion.getElapsedTime()
+                        / (double)
+                        motion.getDuration();
+
+        return Math.min(
+                1.0,
+                Math.max(0.0, progress)
+        );
     }
 
     private void drawSelection(
             Img canvas,
             Position selected
-    ) {
-        if (selected == null) {
+    )
+    {
+        if (selected == null)
+        {
             return;
         }
 
         int x =
-                selected.getCol() * CELL_SIZE;
+                selected.getCol()
+                        * CELL_SIZE;
 
         int y =
-                selected.getRow() * CELL_SIZE;
+                selected.getRow()
+                        * CELL_SIZE;
 
         canvas.drawRect(
                 x,
@@ -144,7 +319,10 @@ public class Renderer {
         );
     }
 
-    private void drawGameOver(Img canvas) {
+    private void drawGameOver(
+            Img canvas
+    )
+    {
         canvas.putText(
                 "Game Over",
                 310,

@@ -22,7 +22,9 @@ public class Controller
     public void click(int x, int y)
     {
         Board board = engine.getBoard();
-        Position clicked = mapper.getPosition(x, y, board);
+
+        Position clicked =
+                mapper.getPosition(x, y, board);
 
         if (clicked == null)
         {
@@ -41,12 +43,31 @@ public class Controller
             return;
         }
 
-        Piece selectedPiece = board.getPiece(selected);
-        Piece clickedPiece = board.getPiece(clicked);
+        /*
+         * לחיצה שנייה על אותה משבצת:
+         * הכלי קופץ במקום.
+         */
+        if (selected.equals(clicked))
+        {
+            engine.jump(selected);
+            selected = null;
+            return;
+        }
 
+        Piece selectedPiece =
+                board.getPiece(selected);
+
+        Piece clickedPiece =
+                board.getPiece(clicked);
+
+        /*
+         * לחיצה על כלי אחר מאותו צבע:
+         * מחליפים את הבחירה.
+         */
         if (clickedPiece != null
                 && selectedPiece != null
-                && clickedPiece.getColor() == selectedPiece.getColor())
+                && clickedPiece.getColor()
+                == selectedPiece.getColor())
         {
             selected = clicked;
             return;

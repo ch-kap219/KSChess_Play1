@@ -28,6 +28,10 @@ public class RuleEngine {
             return MoveValidation.invalid("empty_source");
         }
 
+        if (!selectedPiece.canMove()) {
+            return MoveValidation.invalid("piece_resting");
+        }
+
         Piece destinationPiece =
                 board.getPiece(destination);
 
