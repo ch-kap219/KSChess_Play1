@@ -64,10 +64,8 @@ public class Controller
          * לחיצה על כלי אחר מאותו צבע:
          * מחליפים את הבחירה.
          */
-        if (clickedPiece != null
-                && selectedPiece != null
-                && clickedPiece.getColor()
-                == selectedPiece.getColor())
+        if (clickedPiece != null && selectedPiece != null
+                && clickedPiece.getColor() == selectedPiece.getColor())
         {
             selected = clicked;
             return;
