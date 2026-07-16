@@ -4,25 +4,26 @@ import chess.engine.GameEngine;
 import chess.engine.GameSnapshot;
 import chess.input.Controller;
 
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.List;
 
-public class GameWindow {
-
-    private static final int FRAME_DELAY_MS = 16;
+public class GameWindow
+{
+    private static final int FRAME_DELAY = 16;
 
     private final GameEngine engine;
     private final Controller controller;
     private final Renderer renderer;
 
     private JFrame frame;
-    private JLabel imageLabel;
-    private Timer timer;
+    private JLabel boardLabel;
+    private JLabel blackScore;
+    private JLabel whiteScore;
+    private JTextArea blackMoves;
+    private JTextArea whiteMoves;
 
     private long previousTime;
 
@@ -30,45 +31,49 @@ public class GameWindow {
             GameEngine engine,
             Controller controller,
             Renderer renderer
-    ) {
+    )
+    {
         this.engine = engine;
         this.controller = controller;
         this.renderer = renderer;
     }
 
-    public void start() {
-        SwingUtilities.invokeLater(() -> {
+    public void start()
+    {
+        SwingUtilities.invokeLater(() ->
+        {
             createWindow();
-            startGameLoop();
+            startTimer();
         });
     }
 
-    private void createWindow() {
+    private void createWindow()
+    {
         frame = new JFrame("Kung Fu Chess");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout());
 
-        frame.setDefaultCloseOperation(
-                JFrame.EXIT_ON_CLOSE
-        );
+        boardLabel = new JLabel();
 
-        imageLabel = new JLabel();
+        boardLabel.addMouseListener(new MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(MouseEvent event)
+            {
+                controller.click(
+                        event.getX(),
+                        event.getY()
+                );
 
-        imageLabel.addMouseListener(
-                new MouseAdapter() {
-                    @Override
-                    public void mouseClicked(
-                            MouseEvent event
-                    ) {
-                        handleClick(
-                                event.getX(),
-                                event.getY()
-                        );
-                    }
-                }
-        );
+                render();
+            }
+        });
 
-        frame.add(imageLabel);
+        frame.add(createPlayerPanel(false), BorderLayout.WEST);
+        frame.add(boardLabel, BorderLayout.CENTER);
+        frame.add(createPlayerPanel(true), BorderLayout.EAST);
 
-        renderCurrentState();
+        render();
 
         frame.pack();
         frame.setResizable(false);
@@ -76,60 +81,133 @@ public class GameWindow {
         frame.setVisible(true);
     }
 
-    private void handleClick(
-            int x,
-            int y
-    ) {
-        // הלחיצה עוברת ל־Controller האמיתי
-        controller.click(x, y);
-
-        // מציירים מיד כדי להציג את הבחירה הצהובה
-        renderCurrentState();
-    }
-
-    private void startGameLoop() {
-        previousTime = System.nanoTime();
-
-        timer = new Timer(
-                FRAME_DELAY_MS,
-                event -> updateFrame()
+    private JPanel createPlayerPanel(boolean white)
+    {
+        JLabel score = new JLabel(
+                "Score: 0",
+                SwingConstants.CENTER
         );
 
-        timer.start();
-    }
+        score.setFont(
+                new Font(
+                        Font.SANS_SERIF,
+                        Font.BOLD,
+                        18
+                )
+        );
 
-    private void updateFrame() {
-        long now = System.nanoTime();
+        JTextArea moves = new JTextArea();
+        moves.setEditable(false);
+        moves.setFocusable(false);
+        moves.setFont(
+                new Font(
+                        Font.MONOSPACED,
+                        Font.PLAIN,
+                        14
+                )
+        );
 
-        long elapsedMillis =
-                (now - previousTime)
-                        / 1_000_000;
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setPreferredSize(new Dimension(220, 800));
+        panel.setBorder(
+                BorderFactory.createTitledBorder(
+                        white ? "White" : "Black"
+                )
+        );
 
-        previousTime = now;
+        panel.add(score, BorderLayout.NORTH);
+        panel.add(new JScrollPane(moves), BorderLayout.CENTER);
 
-        if (elapsedMillis > 0) {
-            engine.waitTime(
-                    (int) elapsedMillis
-            );
+        if (white)
+        {
+            whiteScore = score;
+            whiteMoves = moves;
+        }
+        else
+        {
+            blackScore = score;
+            blackMoves = moves;
         }
 
-        renderCurrentState();
+        return panel;
     }
 
-    private void renderCurrentState() {
-        GameSnapshot snapshot =
-                engine.snapshot();
+    private void startTimer()
+    {
+        previousTime = System.nanoTime();
+
+        new Timer(FRAME_DELAY, event ->
+        {
+            long now = System.nanoTime();
+
+            int elapsed =
+                    (int) ((now - previousTime)
+                            / 1_000_000);
+
+            previousTime = now;
+
+            if (elapsed > 0)
+            {
+                engine.waitTime(elapsed);
+            }
+
+            render();
+        }).start();
+    }
+
+    private void render()
+    {
+        GameSnapshot snapshot = engine.snapshot();
 
         Img image = renderer.render(
                 snapshot,
                 controller.getSelected()
         );
 
-        imageLabel.setIcon(
+        boardLabel.setIcon(
                 new ImageIcon(image.get())
         );
 
-        imageLabel.revalidate();
-        imageLabel.repaint();
+        updatePanel(
+                blackScore,
+                blackMoves,
+                engine.getBlackScore(),
+                engine.getBlackMoves()
+        );
+
+        updatePanel(
+                whiteScore,
+                whiteMoves,
+                engine.getWhiteScore(),
+                engine.getWhiteMoves()
+        );
+
+        boardLabel.repaint();
+    }
+
+    private void updatePanel(
+            JLabel scoreLabel,
+            JTextArea movesArea,
+            int score,
+            List<String> moves
+    )
+    {
+        scoreLabel.setText("Score: " + score);
+        movesArea.setText(movesText(moves));
+    }
+
+    private String movesText(List<String> moves)
+    {
+        StringBuilder text = new StringBuilder();
+
+        for (int i = 0; i < moves.size(); i++)
+        {
+            text.append(i + 1)
+                    .append(". ")
+                    .append(moves.get(i))
+                    .append("\n");
+        }
+
+        return text.toString();
     }
 }
