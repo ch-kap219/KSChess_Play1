@@ -29,7 +29,7 @@ public class GameEngine
     private Position pendingFrom;
     private Position pendingTo;
 
-    public GameEngine(Board board)
+    public GameEngine(Board board)//בנאי
     {
         this.board = board;
         this.rules = new RuleEngine();
@@ -272,5 +272,9 @@ public class GameEngine
         {
             realtime.startJump(piece);
         }
+    }
+    public List<Position> getLegalMoves(Position source)
+    {
+        return rules.getLegalMoves(board, source);
     }
 }

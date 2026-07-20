@@ -3,6 +3,8 @@ package chess.rules;
 import chess.model.Board;
 import chess.model.Piece;
 import chess.model.Position;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RuleEngine {
 
@@ -58,5 +60,31 @@ public class RuleEngine {
         }
 
         return MoveValidation.valid();
+    }
+    public List<Position> getLegalMoves(
+            Board board,
+            Position source
+    ) {
+        List<Position> legalMoves = new ArrayList<>();
+
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Position destination =
+                        new Position(row, col);
+
+                MoveValidation result =
+                        validateMove(
+                                board,
+                                source,
+                                destination
+                        );
+
+                if (result.isValid()) {
+                    legalMoves.add(destination);
+                }
+            }
+        }
+
+        return legalMoves;
     }
 }

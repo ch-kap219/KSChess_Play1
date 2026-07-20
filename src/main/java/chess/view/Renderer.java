@@ -9,6 +9,7 @@ import chess.model.Position;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.util.List;
 
 public class Renderer
 {
@@ -40,7 +41,8 @@ public class Renderer
 
     public Img render(
             GameSnapshot snapshot,
-            Position selected
+            Position selected,
+            List<Position> legalMoves
     )
     {
         Board board = snapshot.getBoard();
@@ -66,6 +68,15 @@ public class Renderer
          */
         animationTime += 16;
 
+        /*
+         * קודם מציירים את המשבצות החוקיות,
+         * כדי שהכלים יופיעו מעל הצבע הירוק.
+         */
+        drawLegalMoves(
+                canvas,
+                legalMoves
+        );
+
         drawPieces(
                 canvas,
                 board,
@@ -83,6 +94,50 @@ public class Renderer
         }
 
         return canvas;
+    }
+
+    private void drawLegalMoves(
+            Img canvas,
+            List<Position> legalMoves
+    )
+    {
+        if (legalMoves == null
+                || legalMoves.isEmpty())
+        {
+            return;
+        }
+
+        Graphics2D graphics =
+                canvas.get().createGraphics();
+
+        graphics.setColor(
+                new Color(
+                        80,
+                        180,
+                        70,
+                        130
+                )
+        );
+
+        for (Position position : legalMoves)
+        {
+            int x =
+                    position.getCol()
+                            * CELL_SIZE;
+
+            int y =
+                    position.getRow()
+                            * CELL_SIZE;
+
+            graphics.fillRect(
+                    x,
+                    y,
+                    CELL_SIZE,
+                    CELL_SIZE
+            );
+        }
+
+        graphics.dispose();
     }
 
     private void drawPieces(
@@ -215,11 +270,13 @@ public class Renderer
             int row,
             int col
     )
-    {if (piece.getState() != Piece.State.LONG_REST
-            && piece.getState() != Piece.State.SHORT_REST)
     {
-        return;
-    }
+        if (piece.getState() != Piece.State.LONG_REST
+                && piece.getState() != Piece.State.SHORT_REST)
+        {
+            return;
+        }
+
         int timeLeft =
                 piece.getRestTimeLeft();
 
@@ -242,7 +299,7 @@ public class Renderer
 
         /*
          * השכבה מתחילה בתחתית התא
-         * וקטנה כלפי מטה ככל שהזמן עובר.
+         * וקטנה ככל שהזמן עובר.
          */
         int y =
                 row * CELL_SIZE

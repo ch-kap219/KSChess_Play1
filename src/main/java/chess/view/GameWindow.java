@@ -161,7 +161,8 @@ public class GameWindow
 
         Img image = renderer.render(
                 snapshot,
-                controller.getSelected()
+                controller.getSelected(),
+                controller.getLegalMoves()
         );
 
         boardLabel.setIcon(

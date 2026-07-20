@@ -5,7 +5,6 @@ import chess.input.Controller;
 import chess.io.BoardParser;
 import chess.io.BoardPrinter;
 import chess.model.Board;
-import chess.model.Position;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,13 +14,13 @@ public class ScriptRunner
     private final BoardParser parser;
     private final BoardPrinter printer;
 
-    public ScriptRunner()
+    public ScriptRunner()//בנאי
     {
-        parser = new BoardParser();
-        printer = new BoardPrinter();
+        parser = new BoardParser();//הופך שורות טקסט ללוח אמיתי.
+        printer = new BoardPrinter();//הופך את הלוח בחזרה לטקסט לצורך הדפסה.
     }
 
-    public void run(List<String> lines)
+    public void run(List<String> lines)// בודק אלו שורות שייכות ללוח
     {
         ArrayList<String> boardRows = new ArrayList<>();
 
@@ -86,10 +85,7 @@ public class ScriptRunner
                 int x = Integer.parseInt(parts[1]);
                 int y = Integer.parseInt(parts[2]);
 
-                int row = y / 100;
-                int col = x / 100;
-
-                engine.jump(new Position(row, col));
+                controller.jump(x, y);
             }
             else if (line.startsWith("click"))
             {
